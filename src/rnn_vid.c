@@ -5,6 +5,8 @@
 #include "blas.h"
 
 #ifdef OPENCV
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/videoio/videoio_c.h"
 image get_image_from_stream(CvCapture *cap);
 image ipl_to_image(IplImage* src);
 
@@ -103,9 +105,7 @@ void train_vid_rnn(char *cfgfile, char *weightfile)
         time=clock();
         float_pair p = get_rnn_vid_data(extractor, paths, N, batch, steps);
 
-        memcpy(net.input, p.x, net.inputs*net.batch);
-        memcpy(net.truth, p.y, net.truths*net.batch);
-        float loss = train_network_datum(net) / (net.batch);
+        float loss = train_network_datum(net, p.x, p.y) / (net.batch);
 
 
         free(p.x);

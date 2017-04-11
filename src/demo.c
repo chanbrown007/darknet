@@ -12,6 +12,10 @@
 #define FRAMES 3
 
 #ifdef OPENCV
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/imgproc/imgproc_c.h"
+#include "opencv2/videoio/videoio_c.h"
+image get_image_from_stream(CvCapture *cap);
 
 static char **demo_names;
 static image **demo_alphabet;
@@ -41,7 +45,7 @@ void *fetch_in_thread(void *ptr)
     if(!in.data){
         error("Stream closed.");
     }
-    in_s = letterbox_image(in, net.w, net.h);
+    in_s = resize_image(in, net.w, net.h);
     return 0;
 }
 
@@ -61,7 +65,7 @@ void *detect_in_thread(void *ptr)
     if(l.type == DETECTION){
         get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
     } else if (l.type == REGION){
-        get_region_boxes(l, in.w, in.h, demo_thresh, probs, boxes, 0, 0, demo_hier_thresh, 1);
+        get_region_boxes(l, 1, 1, demo_thresh, probs, boxes, 0, 0, demo_hier_thresh);
     } else {
         error("Last layer must produce detections\n");
     }
@@ -101,7 +105,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     demo_hier_thresh = hier_thresh;
     printf("Demo\n");
     net = parse_network_cfg(cfgfile);
+    layer l = net.layers[net.n-1];
+    
+    printf( "detect layer (layer %d) w = %d h = %d n = %d max = %d\n", net.n, l.w, l.h, l.n, l.w*l.h*l.n );
     if(weightfile){
+    	printf( "cfgFile: %s weightFile: %s\n", cfgfile, weightfile);
         load_weights(&net, weightfile);
     }
     set_batch_network(&net, 1);
@@ -117,7 +125,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     if(!cap) error("Couldn't connect to webcam.\n");
 
-    layer l = net.layers[net.n-1];
+    
+    
     int j;
 
     avg = (float *) calloc(l.outputs, sizeof(float));
